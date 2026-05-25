@@ -10,15 +10,18 @@ services:
       POSTGRES_USER: retailmax_user
       POSTGRES_PASSWORD: retailmax_pass
     volumes:
-      - ./init:/docker-entrypoint-initdb.d   # carga DDL y DATA automáticamente
+      - ./init:/docker-entrypoint-initdb.d
       - pg_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - retailmax_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U retailmax_user -d retailmax"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 60s
 
   metabase:
     image: metabase/metabase:latest
@@ -26,6 +29,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    restart: on-failure
     environment:
       MB_DB_TYPE: postgres
       MB_DB_DBNAME: metabase_app
@@ -37,6 +41,12 @@ services:
       - ./metabase-data:/metabase-data
     ports:
       - "3000:3000"
+    networks:
+      - retailmax_net
+
+networks:
+  retailmax_net:
+    driver: bridge
 
 volumes:
   pg_data:
